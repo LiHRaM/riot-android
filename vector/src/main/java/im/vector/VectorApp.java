@@ -45,6 +45,8 @@ import org.matrix.androidsdk.call.MXCallsManager;
 import org.matrix.androidsdk.core.Log;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -82,11 +84,13 @@ import im.vector.util.PreferencesManager;
 import im.vector.util.RageShake;
 import im.vector.util.VectorMarkdownParser;
 import im.vector.util.VectorUtils;
+import server.Server;
+import server.Callback;
 
 /**
  * The main application injection point
  */
-public class VectorApp extends MultiDexApplication {
+public class VectorApp extends MultiDexApplication implements Callback {
     private static final String LOG_TAG = VectorApp.class.getSimpleName();
 
     /**
@@ -191,10 +195,33 @@ public class VectorApp extends MultiDexApplication {
         }
     };
 
+    public long getLocalPort() {
+        return mLocalPort;
+    }
+
+    private long mLocalPort = 0;
+
+    public void setPort(long port) {
+        Log.d(LOG_TAG, "Listening on :" + port);
+        mLocalPort = port;
+    }
+
     @Override
     public void onCreate() {
         Log.d(LOG_TAG, "onCreate");
         super.onCreate();
+
+        Runnable dendrite_task = () -> Server.init(
+                getFilesDir().getPath(),
+                "dendrite-server",
+                0,
+                this
+        );
+        new Thread(dendrite_task).start();
+
+        // Block until Dendrite is set up with a dedicated port
+        while (mLocalPort == 0)
+            ;
 
         mLifeCycleListener = new VectorLifeCycleObserver();
         ProcessLifecycleOwner.get().getLifecycle().addObserver(mLifeCycleListener);
