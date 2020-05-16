@@ -94,6 +94,7 @@ import im.vector.PhoneNumberHandler;
 import im.vector.R;
 import im.vector.RegistrationManager;
 import im.vector.UnrecognizedCertHandler;
+import im.vector.VectorApp;
 import im.vector.activity.policies.AccountCreationTermsActivity;
 import im.vector.activity.util.RequestCodesKt;
 import im.vector.features.hhs.ResourceLimitDialogHelper;
@@ -852,17 +853,7 @@ public class LoginActivity extends MXCActionBarActivity implements RegistrationM
      * @return the home server Url according to custom HS checkbox
      */
     private String getHomeServerUrl() {
-        String url = ServerUrlsRepository.INSTANCE.getDefaultHomeServerUrl(this);
-
-        if (mUseCustomHomeServersCheckbox.isChecked()) {
-            url = mHomeServerText.getText().toString().trim();
-
-            if (url.endsWith("/")) {
-                url = url.substring(0, url.length() - 1);
-            }
-        }
-
-        return url;
+        return VectorApp.getInstance().getDendriteUrl().toString();
     }
 
     /**

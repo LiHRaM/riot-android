@@ -28,6 +28,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -45,8 +46,6 @@ import org.matrix.androidsdk.call.MXCallsManager;
 import org.matrix.androidsdk.core.Log;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -90,7 +89,7 @@ import server.Callback;
 /**
  * The main application injection point
  */
-public class VectorApp extends MultiDexApplication implements Callback {
+public class VectorApp extends MultiDexApplication {
     private static final String LOG_TAG = VectorApp.class.getSimpleName();
 
     /**
@@ -195,15 +194,35 @@ public class VectorApp extends MultiDexApplication implements Callback {
         }
     };
 
-    public long getLocalPort() {
-        return mLocalPort;
+
+    private static class PortActivatedCallback implements Callback {
+        private long mDendritePort = 0;
+
+        long getPort() {
+            this.blockOnPort();
+            return mDendritePort;
+        }
+
+        private void blockOnPort() {
+            while (mDendritePort == 0) {
+
+            }
+
+            Log.d(LOG_TAG, "Port accessed :" + mDendritePort);
+        }
+
+        @Override
+        public void setPort(long l) {
+            mDendritePort = l;
+        }
     }
 
-    private long mLocalPort = 0;
+    private Thread mDendriteProcess;
+    private PortActivatedCallback mDendriteCallback = new PortActivatedCallback();
+    private Uri mDendriteUrl;
 
-    public void setPort(long port) {
-        Log.d(LOG_TAG, "Listening on :" + port);
-        mLocalPort = port;
+    public Uri getDendriteUrl() {
+        return mDendriteUrl;
     }
 
     @Override
@@ -211,17 +230,16 @@ public class VectorApp extends MultiDexApplication implements Callback {
         Log.d(LOG_TAG, "onCreate");
         super.onCreate();
 
-        Runnable dendrite_task = () -> Server.init(
+        Runnable dendriteTask = () -> Server.init(
                 getFilesDir().getPath(),
                 "dendrite-server",
                 0,
-                this
+                mDendriteCallback
         );
-        new Thread(dendrite_task).start();
-
-        // Block until Dendrite is set up with a dedicated port
-        while (mLocalPort == 0)
-            ;
+        mDendriteProcess = new Thread(dendriteTask);
+        mDendriteProcess.start();
+        long port = mDendriteCallback.getPort();
+        mDendriteUrl = Uri.parse("http://localhost:" + port);
 
         mLifeCycleListener = new VectorLifeCycleObserver();
         ProcessLifecycleOwner.get().getLifecycle().addObserver(mLifeCycleListener);

@@ -23,6 +23,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.net.Uri;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -352,8 +353,11 @@ public class Matrix {
 
         Set<String> matrixIds = new HashSet<>();
         sessions = new ArrayList<>();
-
         for (HomeServerConnectionConfig config : hsConfigList) {
+
+            // Update the port of the homeserver
+            config.setHomeserverUri(VectorApp.getInstance().getDendriteUrl());
+
             // avoid duplicated accounts.
             // null userId has been reported by GA
             if (config.getCredentials() != null && !TextUtils.isEmpty(config.getCredentials().userId) && !matrixIds.contains(config.getCredentials().userId)) {
