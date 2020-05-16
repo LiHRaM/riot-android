@@ -15,3 +15,7 @@
 /tmp
 
 captures/
+.project
+.settings/org.eclipse.buildship.core.prefs
+vector/.classpath
+vector/.settings/org.eclipse.buildship.core.prefs
